@@ -4,6 +4,17 @@ author: "Gabriel Valentin Behnke"
 date: "20.04.2021"
 output: html_document
 ---
+<style>
+body {
+  color: white;
+  background-color: darkgreen;
+ 
+}
+p {
+  color: white;
+}
+</style>
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -46,7 +57,7 @@ df
 df$Result[df$Operation=="product"]
 ```
 
-## Plot
+## Plot test
 
 <table>
   <tr>

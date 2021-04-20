@@ -355,6 +355,16 @@ pre code {
 </div>
 
 
+<style>
+body {
+  color: white;
+  background-color: darkgreen;
+ 
+}
+p {
+  color: white;
+}
+</style>
 <div id="hello-r-hello-github" class="section level1">
 <h1>Hello R, Hello GitHub</h1>
 <div id="tasks" class="section level2">
@@ -375,7 +385,7 @@ pre code {
 </div>
 <div id="solution" class="section level2">
 <h2>Solution</h2>
-<pre class="r"><code>a&lt;-2
+<pre><code>a&lt;-2
 b&lt;-5
 r1&lt;-a+b
 r2&lt;-a-b
@@ -384,26 +394,17 @@ r4&lt;-a/b
 v1&lt;-c(r1,r2,r3,r4)
 r5&lt;-a**b
 v1&lt;-c(r1,r2,r3,r4,r5)
-v1</code></pre>
-<pre><code>## [1]  7.0 -3.0 10.0  0.4 32.0</code></pre>
-<pre class="r"><code>v2&lt;-c(&quot;sum&quot;,&quot;difference&quot;,&quot;product&quot;,&quot;ratio&quot;,&quot;power&quot;)
-print(v2)</code></pre>
-<pre><code>## [1] &quot;sum&quot;        &quot;difference&quot; &quot;product&quot;    &quot;ratio&quot;      &quot;power&quot;</code></pre>
-<pre class="r"><code>Results&lt;-v1
+v1
+v2&lt;-c(&quot;sum&quot;,&quot;difference&quot;,&quot;product&quot;,&quot;ratio&quot;,&quot;power&quot;)
+print(v2)
+Results&lt;-v1
 Operation&lt;-v2
 df&lt;-data.frame(Results,Operation)
-df</code></pre>
-<pre><code>##   Results  Operation
-## 1     7.0        sum
-## 2    -3.0 difference
-## 3    10.0    product
-## 4     0.4      ratio
-## 5    32.0      power</code></pre>
-<pre class="r"><code>df$Result[df$Operation==&quot;product&quot;]</code></pre>
-<pre><code>## [1] 10</code></pre>
+df
+df$Result[df$Operation==&quot;product&quot;]</code></pre>
 </div>
-<div id="plot" class="section level2">
-<h2>Plot</h2>
+<div id="plot-test" class="section level2">
+<h2>Plot test</h2>
 <table>
 <tr>
 <th>
