@@ -1,0 +1,42 @@
+---
+title: "Behnke_Abgabe_2"
+author: "Gabriel Valentin Behnke"
+date: "24 4 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tasks
+
+1. Read in the data contained in this .csv file into R as an R data.frame object in the R workspace.
+```{r}
+setwd("C:/Users/super/Documents/sdm/Abgabe_2/data")
+dataset <- read.csv("dummydata.csv")
+```
+2. What are the data types of each column?
+```{r}
+class(dataset$family)
+class(dataset$genus)
+class(dataset$species)
+class(dataset$error)
+class(dataset$quality)
+class(dataset$comment)
+```
+3. Save the column entitled “error” as a vector object in the R workspace.
+```{r}
+error<-dataset$error
+is.vector(error)
+```
+4. Remove all rows with values larger than 1 in the “error” column and save the result as a new R object.
+```{r}
+index_error<-error<=1
+data_neg_1<-dataset[index_error,]
+```
+5. Write out this cleaned object to your local “output” folder as a new .csv file.
+```{r}
+write.csv(data_neg_1,"data_neg_1")
+data_neg_1
+```
