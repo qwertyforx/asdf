@@ -1,0 +1,70 @@
+---
+title: "Abgabe_3"
+author: "Gabriel Valentin Behnke"
+date: "4 5 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Solution
+```{r,include=FALSE}
+library("raster")
+```
+Create a map of your country of residence with the following features:
+
+1. a raster background map showing elevation data,
+```{r}
+elev <- getData("worldclim", var="alt", res=10)
+```
+2. a vector map showing the country boundary,
+```{r}
+ger <- getData('GADM', country='DEU', level=0)
+```
+3. use the vector map to clip the raster map,
+```{r}
+crop_elev <- crop(elev, extent(ger))
+clip_elev <- mask(crop_elev, ger)
+plot(clip_elev)
+plot(ger, add=T)
+```
+
+4. map point locations denoting the places of residence of the course participants in your country (if any), which you can enter here (use a SpatialPointsDataFrame object with the correct CRS for this task),
+```{r}
+grp <- read.csv("C:/Users/super/Documents/sdm/Abgabe_3/Input/participant_locations.csv")
+lola <- grp[,c(3,2)]
+spdf <- SpatialPointsDataFrame(coords = lola, data = grp, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+plot(clip_elev)
+plot(ger, add=T)
+plot(spdf, add=T)
+```
+
+5. map the three largest cities of your selected country with different symbols, and
+```{r}
+plot(clip_elev)
+plot(ger, add=T)
+plot(spdf, add=T)
+points(13.404954,52.520008,pch=8,cex=2)
+points(9.993682,53.551086,pch=13,cex=2)
+points(11.576124,48.137154,pch=13,cex=2)
+```
+
+6. get bonus points by adding a legend, rivers, and other cartographic elements as well as
+```{r}
+plot(clip_elev)
+plot(ger, add=T)
+plot(spdf, add=T)
+points(13.404954,52.520008,pch=8,cex=2)
+points(9.993682,53.551086,pch=13,cex=2)
+points(11.576124,48.137154,pch=13,cex=2)
+legend("bottomright",legend = c("Residences","Berlin","Hamburg","Muenchen"),pch = c(3,8,13,13),title="Places")
+```
+
+7. the distances of the places of residence to Marburg.
+```{r}
+list_a <- cbind(lola[,1],lola[,2])
+spDistsN1(list_a,c(8.7667933,50.8021728),longlat = TRUE)
+```
+
