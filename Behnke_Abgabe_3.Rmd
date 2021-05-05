@@ -47,8 +47,8 @@ plot(clip_elev)
 plot(ger, add=T)
 plot(spdf, add=T)
 points(13.404954,52.520008,pch=8,cex=2)
-points(9.993682,53.551086,pch=13,cex=2)
-points(11.576124,48.137154,pch=13,cex=2)
+points(9.993682,53.551086,pch=12,cex=2)
+points(11.576124,48.137154,pch=14,cex=2)
 ```
 
 6. get bonus points by adding a legend, rivers, and other cartographic elements as well as
@@ -57,9 +57,9 @@ plot(clip_elev)
 plot(ger, add=T)
 plot(spdf, add=T)
 points(13.404954,52.520008,pch=8,cex=2)
-points(9.993682,53.551086,pch=13,cex=2)
-points(11.576124,48.137154,pch=13,cex=2)
-legend("bottomright",legend = c("Residences","Berlin","Hamburg","Muenchen"),pch = c(3,8,13,13),title="Places")
+points(9.993682,53.551086,pch=12,cex=2)
+points(11.576124,48.137154,pch=14,cex=2)
+legend("bottomright",legend = c("Residences","Berlin","Hamburg","Muenchen"),pch = c(3,8,12,14),title="Places")
 ```
 
 7. the distances of the places of residence to Marburg.
