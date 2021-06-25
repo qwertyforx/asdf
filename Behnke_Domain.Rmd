@@ -1,0 +1,276 @@
+---
+title: 'Student Project: Domain'
+author: "Gabriel Valentin Behnke"
+date: "06.06.2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Using Domain to model Butterfly Distribution in Pakistan
+
+
+
+### 1. Introduction
+
+In this tutorial basic features of the algorithm Domain will be presented by modeling a prediction of the specie´s distribution of butterflies for the country Pakistan. The tutorial is part of the project seminar “Species Distribution Modeling” at Philipps-University Marburg.
+
+
+### 2. Theory of Domain
+
+Domain is an profile method that was developed by Carpenter G., A.N. Gillison and J. Winter in 1993. It is an algorithm that computes the dissimilarity between a test location and a location of known occurrence of a certain species (Carpenter et al. 1993). Therefor it only needs presence records and some biophysical attributes (ebd.).
+Same can be said about Bioclim, a profile method that was published in 1986 already. In the eyes of Carpenter et al. Bioclim had some deficiencies. They criticized that the model treats each climatic axis independently. This result can lead to problematic predictions, as in the following plot:
+
+![_Figure 1. Bioclim environmental envelope (Carpenter et al. 1993)._](Bilder/Bioclim.png)
+
+While point A, which is a know occurrence site, is outside of core bioclimate, point B is inside. However Point B is not very similar to the actual occurrence sites. The following is the adaptation of Carpenter et al. known as Domain.
+
+![_Figure 2. DOMAIN environmental envelope (Carpenter et al. 1993)._](Bilder/Domain.png)
+
+Note that the Points A and C are in the core bioclimate, while the Point B is not. In general the prediction is more precise.
+
+
+In order to test for the similarity of locations, various abiotic factors are taken into account. These factors however can be qualitative as well as quantitative. In order to work with mixed data types the algorithm uses the so-called __Gower Distance__.
+
+_What is the Gower Distance?_ 
+
+The Gower distance does not describe a spatial distance but the similarity of two locations to each other. The data types are combined as follows:
+
+>"Briefly, to compute the Gower distance between two items you compare each element and compute a term. If the element is numeric, the term is the absolute value of the difference divided by the range. If the element is non-numeric the term is 1 if the elements are different or the term is 0 if the elements are the same. The Gower distance is the average of the terms." (McCaffrey 2020)
+
+Example:
+
+We have a dataset of a group of 5 people described by  5 different elements: age, height, gender, eye color and do they have pets.
+This data set could look like this:
+```{r echo=FALSE}
+age <- c(12, 31, 61, 49, 25)
+height <- c(161, 180, 163, 189, 172)
+gender <- c("male", "female", "female", "male", "female")
+eyecolor <- c("green", "blue", "brown", "blue", "brown")
+pets <- c("YES", "NO", "YES", "NO", "NO")
+group<- data.frame(age, height, gender, eyecolor, pets)
+print(group)
+```
+If we were interested in the similarity of person #2 and #5 we would get one value between 0 and 1 for each element. As McCaffrey states, the average of these values is the Gower Distance of the people.
+```{r echo=FALSE}
+group[c(2,5),]
+```
+```{r}
+diff(range(group$age))          # range of age 
+(31-25)/49                      # age value
+diff(range(group$height))       # range of height
+(180-172)/28                    # height value
+#0                              # gender value
+#1                              # eye color value
+#0                              # having pets value
+```
+```{r}
+mean(0.122449,0.2857143,0,1,0)  # Gower Distance between person #2 and #5
+```
+
+
+### 3. Preparation and loading data packages
+
+```{r}
+setwd('C:/Users/super/Documents/sdm/Domain/Process')
+library(raster)
+library(dismo)
+library(maptools)
+library(rgdal)
+library(usdm)
+library(caret)
+
+pak <- getData("GADM", country = "Pakistan", level = 0)
+```
+
+### 4. Data input
+
+In order to fly efficiently butterflies need to maintain the temperature of their flight muscles well above the ambient temperature (Turner et al. 1987). An increased thermal and radiant energy significantly also increases their reproductive rate (Kingsolver 1983). Furthermore high levels of humidity increases the species richness of butterflies. In an multi-species analysis the observed species richness in a wet forest was two times higher than in a comparable dry one (Checa et al. 2019).
+
+This input allows us to incorporate various climatic variables. For this tutorial we will choose the following:
+
+1. precipitation (mm)
+
+2. solar radiation (kJ m-2 day-1)
+
+3. average temperature (°C)
+
+4. maximum temperature (°C)
+
+5. minimum temperature (°C)
+
+6. water vapor pressure (kPa)
+
+
+The used Data can be found on the [worldclim](https://www.worldclim.org/data/worldclim21.html) page.
+
+
+Preparing the environmental data
+```{r}
+#they need to be stacked together and cropped to the extent of Pakistan.
+wprec <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_prec",pattern = ".tif", full.names = TRUE) # This creates a vector with all tif-files in this location
+wprecstack <- raster::stack(wprec)
+wsrad <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_srad",pattern = ".tif", full.names = TRUE)
+wsradstack <- raster::stack(wsrad)
+wtavg <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_tavg",pattern = ".tif", full.names = TRUE)
+wtavgstack <- raster::stack(wtavg)
+wtmax <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_tmax",pattern = ".tif", full.names = TRUE)
+wtmaxstack <- raster::stack(wtmax)
+wtmin <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_tmin",pattern = ".tif", full.names = TRUE)
+wtminstack <- raster::stack(wtavg)
+wvapr <- list.files("C:/Users/super/Documents/sdm/Domain/Process/Data/envdata/wc2.1_2.5m_vapr",pattern = ".tif", full.names = TRUE)
+wvaprstack <- raster::stack(wvapr)
+# In a step in between the data got cropped and clipped to the extent of pak
+cropped_prec <- crop(wprecstack, extent(pak))
+clipped_prec <- mask(cropped_prec, pak)
+clipped_prec_sum <- sum(clipped_prec)
+cropped_rads <- crop(wsradstack, extent(pak))
+clipped_rads <- mask(cropped_rads, pak)
+clipped_rads_mean <- mean(clipped_rads)
+cropped_tavg <- crop(wtavgstack, extent(pak))
+clipped_tavg <- mask(cropped_tavg, pak)
+clipped_tavg_mean <- mean(clipped_tavg)
+cropped_tmax <- crop(wtmaxstack, extent(pak))
+clipped_tmax <- mask(cropped_tmax, pak)
+clipped_tmax_mean <- mean(clipped_tmax)
+cropped_tmin <- crop(wtminstack, extent(pak))
+clipped_tmin <- mask(cropped_tmin, pak)
+clipped_tmin_mean <- mean(clipped_tmin)
+cropped_vapr <- crop(wvaprstack, extent(pak))
+clipped_vapr <- mask(cropped_vapr, pak)
+clipped_vapr_mean <- mean(clipped_vapr)
+wvaprstack <- raster::stack(wvapr)
+cropped_vapr <- crop(wvaprstack, extent(pak))
+clipped_vapr <- mask(cropped_vapr, pak)
+clipped_vapr_mean <- mean(clipped_vapr)
+```
+
+A write out of our now stacked raster data looks like this.
+```{r}
+pakclim <- stack(clipped_prec_sum,clipped_rads_mean,clipped_tavg_mean,clipped_tmax_mean,clipped_tmin_mean,clipped_vapr_mean)
+plot(pakclim,main=c("precipitation","solar radiation","average temperature","maximum temperature","minimum temperature","water vapor pressure"))
+```
+
+Now the butterfly data are read in and converted into spacial points.
+```{r}
+
+butterflies <- read.csv("C:/Users/super/Documents/sdm/Domain/Process/Data/PakistanLadakh.csv", header=TRUE, sep=',')
+butterflies[,1] <- as.factor(butterflies[,1])
+list_butterflies <- levels(butterflies[,1]) 
+coordinates(butterflies) <- c("x","y")
+points <- crop(butterflies, pak)
+plot(pakclim$layer.1, xlab = "Latitude", ylab = "Longitude", main= "Precipitation Sum", 1)
+plot(pak, add=TRUE)
+points(butterflies, pch=19, cex=0.1, col='black')
+```
+
+### 5. Domaination 
+
+Setting a seed for reproducibility, as well as dividing our points into training and testing points.
+```{r warning=FALSE}
+set.seed(111)
+points_df <- as.data.frame(points)
+points_train <- createDataPartition(points$ï..species, times = 1, p = 0.6, list = FALSE)
+sp_test <- points_df[-points_train,]
+sp_train <- points_df[points_train,]
+```
+
+This output shows which environmental values have a high occurrence of butterflies.
+
+Again for clarity, this is the order of the visualized factors (layer 1-6):
+
+1. precipitation (mm)
+
+2. solar radiation (kJ m-2 day-1)
+
+3. average temperature (°C)
+
+4. maximum temperature (°C)
+
+5. minimum temperature (°C)
+
+6. water vapor pressure (kPa)
+```{r}
+dom <- domain(pakclim, sp_train[,-1])
+response(dom)
+```
+
+
+And here we see the prediction map with the occurrence data added.
+```{r}
+butterfly_pred <- predict(pakclim, dom)
+plot(butterfly_pred, xlab = "Latitude", ylab = "Longitude", main= "Butterfly Prediction Map")
+plot(pak, add = TRUE)
+points(points, pch=19, cex=0.1, col="black")
+```
+
+### 6. Species Richness map
+
+This step creates a map which tells, what number of species there is per pixel.
+First we set a threshold..
+
+```{r}
+sdm_threshold <- function(butterfly_pred, points_df, type = "mtp", binary = FALSE){
+  occPredVals <- raster::extract(butterfly_pred, points_df)
+  if(type == "mtp"){
+    thresh <- min(na.omit(occPredVals))
+  } else if(type == "p10"){
+    if(length(occPredVals) < 10){
+      p10 <- floor(length(occPredVals) * 0.9)
+    } else {
+      p10 <- ceiling(length(occPredVals) * 0.9)
+    }
+    thresh <- rev(sort(occPredVals))[p10]
+  }
+  sdm_thresh <- butterfly_pred
+  sdm_thresh[sdm_thresh < thresh] <- NA
+  if(binary){
+    sdm_thresh[sdm_thresh >= thresh] <- 1
+  }
+  return(sdm_thresh)
+}
+```
+
+... and test it on a single species.
+
+```{r}
+b_occs <- subset(butterflies, butterflies$ï..species == 'Acraea_issoria')
+b_mtp <- sdm_threshold(butterfly_pred, as.data.frame(b_occs)[,2:3], "mtp")
+plot(b_mtp,xlab = "Latitude", ylab = "Longitude", main= "Test map")
+```
+       
+After that looping can be started. The final result is a species richness map for all the species of our csv file.
+Some species will be ignored in this step due to a low occurrence number. This is only the case for species with just a single occurrence point though.
+
+```{r warning=FALSE}
+memory.limit(9999999999)
+list_butterflies <- levels(butterflies$ï..species)
+list_results=list()
+list_binary=list()
+for (i in list_butterflies[1:429]) {
+  data_butterfly <- subset(points_df, points_df$ï..species == i)
+  data_butterfly <- data_butterfly[,2:3]
+  butterfly_occs <- subset(points_df, points_df$ï..species == i)
+  butterfly_mtp <- sdm_threshold(butterfly_pred, as.data.frame(butterfly_occs)[,2:3], "mtp", binary=TRUE)
+  list_binary[[i]] <- butterfly_mtp
+  list_results[[i]] <- butterfly_pred
+}
+butterfly_stack <- stack(list_binary)
+results <- stackApply(butterfly_stack,indices=c(1),fun=sum, na.rm=TRUE)
+plot(results,xlab = "Latitude", ylab = "Longitude",main="Species Richness Map")
+plot(pak, add = TRUE)
+```
+```
+
+
+### Citations
+
+ Carpenter, G., Gillison, A. N., & Winter, J. (1993): DOMAIN: a flexible modelling procedure for mapping potential distributions of plants and animals. Biodiversity & Conservation, 2(6), 667-680.
+ 
+ Checa, M.F., Levy, E., Rodriguez, J. & K. Willmott (2019): Rainfall as a significant contributing factor to butterfly seasonality along a climatic gradient in the neotropics. bioRxis. The reprint server for biology. 
+ 
+ Kingsolver, J. G. (1983): Ecological significance of flight activity in Colias butterflies: implications for reproductive strategy and population structure. - Ecology 64: 5
+ 
+ Turner, J.R.G., Gatehouse, C.M. & C.A. Corey (1987): Does Solar Energy Control Organic Diversity? Butterflies, Moths and the British Climate. Oikos 48 (2): 195-205. 
+
